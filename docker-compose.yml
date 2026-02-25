@@ -1,0 +1,28 @@
+services:
+  api: &main_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: yolo_world_fastapi:${YOLO_WORLD_FASTAPI_VERSION:-latest}
+    restart: always
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      YOLO_WORLD_FASTAPI_HOST: 0.0.0.0
+      # MinIO настройки (можно переопределить в .env)
+      YOLO_WORLD_FASTAPI_MINIO_ENDPOINT: ${YOLO_WORLD_FASTAPI_MINIO_ENDPOINT:-minio.example.com}
+      YOLO_WORLD_FASTAPI_MINIO_ACCESS_KEY: ${YOLO_WORLD_FASTAPI_MINIO_ACCESS_KEY:-}
+      YOLO_WORLD_FASTAPI_MINIO_SECRET_KEY: ${YOLO_WORLD_FASTAPI_MINIO_SECRET_KEY:-}
+      YOLO_WORLD_FASTAPI_MINIO_BUCKET: ${YOLO_WORLD_FASTAPI_MINIO_BUCKET:-yolo-models}
+      YOLO_WORLD_FASTAPI_MINIO_SECURE: ${YOLO_WORLD_FASTAPI_MINIO_SECURE:-True}
+    volumes:
+      # Монтируем папку checkpoints для сохранения загруженных моделей
+      - ./checkpoints:/app/src/checkpoints
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

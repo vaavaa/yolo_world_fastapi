@@ -1,0 +1,1 @@
+"electronics","clothes","furniture","toys","sports","cosmetics","tools","decor","health","computers","hygiene","misc","other","merch","accessories","item","dishes","lights","carpet","plant", "dress"

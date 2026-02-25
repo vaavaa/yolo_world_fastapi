@@ -1,0 +1,83 @@
+# stages:
+#   - "test"
+
+# .test-template:
+#   stage: test
+#   image: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+#   tags:
+#     - kubernetes-runner
+#     - docker-runner
+#   except:
+#     - tags
+#   before_script:
+#     - apt update && apt install -y python3 python3-pip git
+#     - pip install poetry==1.8.2
+#     - poetry config virtualenvs.create false
+#     - poetry config cache-dir /tmp/poetry_cache
+#     - cp pyproject.toml poetry.lock /tmp/
+#     - cd /tmp
+#     - poetry install --only main
+#     - cd $CI_PROJECT_DIR
+#     - poetry install --only main
+stages:
+  - dockerize
+  - deploy
+
+variables:
+  NAME_SERVICE: yolo-world-fastapi
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_API_VERSION: 1.42
+
+
+.deploy_base: &deploy_base
+  image: mirror.gcr.io/dtzar/helm-kubectl:3.11
+  tags:
+    - nextgen-prod
+  variables:
+    NAMESPACE: apps 
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo ${KUBE_CONFIG_PROD} | base64 -d > /etc/deploy/config
+    - export KUBECONFIG=/etc/deploy/config
+
+
+dockerize-prod:
+ when: on_success
+ timeout: 3 hours 30 minutes
+ allow_failure: false
+ tags:
+    - nextgen-prod
+ only:
+    - main
+ services:
+ - name: mirror.gcr.io/docker:23.0.1
+   alias: docker
+ variables:
+   DOCKER_DRIVER: overlay2
+   DOCKER_TLS_CERTDIR: ""
+ stage: dockerize
+ before_script:
+ script:
+   - mkdir /root/.docker/
+   - echo -n ${REGISTRY_TOKEN} | docker login --username oauth --password-stdin ${YC_REGISTRY_PROD_NAME}
+   - docker build -t $YC_REGISTRY_PROD_NAME/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$CI_PIPELINE_ID-$CI_COMMIT_BRANCH --build-arg BARNCH=$BRANCH --build-arg REGISTRY=$YC_REGiSTRY_PROD_NAME -f Dockerfile .
+   - docker push $YC_REGISTRY_PROD_NAME/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$CI_PIPELINE_ID-$CI_COMMIT_BRANCH
+   - docker rmi $YC_REGISTRY_PROD_NAME/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$CI_PIPELINE_ID-$CI_COMMIT_BRANCH
+
+
+
+
+deploy:
+  stage: deploy
+  <<: *deploy_base
+  only:
+    - main
+  script:
+    - cp .helm/yolo.yaml /tmp/input.yaml
+    - cat /tmp/input.yaml
+    - envsubst < /tmp/input.yaml > /tmp/yolo.yaml
+    - helm template .helm/ -f /tmp/yolo.yaml
+    - helm upgrade --set image.tag=$CI_PIPELINE_ID-$CI_COMMIT_BRANCH --install yolo-world-fastapi  .helm/ -f /tmp/yolo.yaml --namespace $NAMESPACE --create-namespace
+    #--set jobs[0].image.tag=$CI_PIPELINE_ID-$CI_COMMIT_BRANCH if init job needed need to revert back this option

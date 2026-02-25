@@ -1,0 +1,16 @@
+services:
+  api:
+    ports:
+      # Exposes application port.
+    - "8000:8000"
+    build:
+      context: .
+    volumes:
+      # Adds current directory as volume.
+    - .:/app/src/
+    environment:
+      # Enables autoreload.
+      YOLO_WORLD_FASTAPI_RELOAD: "True"
+      # DVC настройки
+      # Задайте YOLO_WORLD_FASTAPI_DVC_PASSWORD в .env или при запуске (без значения по умолчанию в репозитории)
+      YOLO_WORLD_FASTAPI_DVC_PASSWORD: ${YOLO_WORLD_FASTAPI_DVC_PASSWORD:?DVC password not set}
