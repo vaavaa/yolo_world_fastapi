@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     label_classes: list[str] = ["electronics","furniture","toys","sports","tools","decor","health","computers","hygiene","other","merch","accessories","item","dishes","lights","carpet","plant", "dress", "shoe","pants"]
     iou_threshold: float = 0.5
     score_threshold: float = 0.20
-    max_num_detections: int = 6
-    min_area_ratio: float = 0.005  # Минимальный коэффициент площади детекции относительно общей площади изображения
+    max_num_detections: int = 10
+    min_area_ratio: float = 0.0005  # Минимальный коэффициент площади детекции относительно общей площади изображения
 
     # Настройки качества обработки изображений
     image_interpolation: str = "cubic"  # Алгоритм интерполяции: "linear", "cubic", "lanczos"

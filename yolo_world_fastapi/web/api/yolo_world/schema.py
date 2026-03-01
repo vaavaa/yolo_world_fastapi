@@ -8,7 +8,7 @@ class YoloWorldInputDTO(BaseModel):
     class_names: Optional[List[str]] = None
     iou_threshold: Optional[float] = 0.5
     score_threshold: Optional[float] = 0.20
-    max_num_detections: Optional[int] = 5
+    max_num_detections: Optional[int] = 15
 
 class YoloWorldOnlyBoxes(YoloWorldInputDTO):
     only_bboxs: Optional[bool] = False
